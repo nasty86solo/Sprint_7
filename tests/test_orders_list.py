@@ -1,12 +1,12 @@
-
 import allure
-from utils.api import get
 
 @allure.feature("Orders")
-@allure.story("List")
 class TestOrdersList:
-    def test_list_contains_orders(self):
-        r = get("/orders")
+
+    @allure.title("Список заказов возвращается (200) и содержит массив orders")
+    def test_list_contains_orders(self, orders_api):
+        r = orders_api.list()
         assert r.status_code == 200
         body = r.json()
-        assert isinstance(body.get("orders"), list) if isinstance(body, dict) else isinstance(body, list)
+        assert isinstance(body, dict)
+        assert isinstance(body.get("orders"), list)

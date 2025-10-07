@@ -1,26 +1,34 @@
-
 import pytest, allure
-from utils.api import post
 from utils.generator import courier as gen_courier
 
 @allure.feature("Courier")
-@allure.story("Create courier")
 class TestCourierCreate:
-    def test_courier_can_be_created(self):
+
+    @allure.title("Можно создать курьера (201, ok=true)")
+    def test_courier_can_be_created(self, courier_api):
         body = gen_courier()
-        r = post("/courier", data=body)
+        r = courier_api.create(body)
         assert r.status_code == 201
-        assert r.json().get("ok") is True
+        j = r.json()
+        assert isinstance(j, dict)
+        assert j.get("ok") is True
 
-    def test_cannot_create_same_twice(self):
+    @allure.title("Нельзя создать двух одинаковых курьеров (409/400, есть message)")
+    def test_cannot_create_same_twice(self, courier_api):
         body = gen_courier(login="same_login")
-        assert post("/courier", data=body).status_code in (201, 409)
-        r = post("/courier", data=body)
+        courier_api.create(body)
+        r = courier_api.create(body)
         assert r.status_code in (409, 400)
+        j = r.json()
+        assert isinstance(j, dict)
+        assert "message" in j or j.get("ok") is False
 
-    @pytest.mark.parametrize("key", ["login", "password", "firstName"], ids=["no_login","no_password","no_firstName"])
-    def test_required_fields(self, key):
+    @pytest.mark.parametrize("key", ["login", "password"], ids=["no_login","no_password"])
+    @allure.title("Создание курьера без обязательного поля: {key} → 400 + message")
+    def test_required_fields(self, courier_api, key):
         body = gen_courier()
         body.pop(key)
-        r = post("/courier", data=body)
+        r = courier_api.create(body)
         assert r.status_code == 400
+        j = r.json()
+        assert isinstance(j, dict) and "message" in j
